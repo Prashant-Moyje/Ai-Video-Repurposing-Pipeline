@@ -31,15 +31,30 @@ def probe(video_path: Path) -> dict:
     }
 
 
-def build_video_filter(src_w: int, src_h: int, preset: Preset) -> str:
-    """Build the ffmpeg -vf filter string to fit src dimensions onto preset canvas."""
+def build_video_filter(
+    src_w: int, src_h: int, preset: Preset, crop_center: tuple[float, float] = (0.5, 0.5)
+) -> str:
+    """
+    Build the ffmpeg -vf filter string to fit src dimensions onto preset canvas.
+
+    `crop_center` is (x_frac, y_frac) in [0, 1], only used for "crop_fill"
+    mode — (0.5, 0.5) is a plain center-crop (the default / original
+    behavior). Pass a different offset (e.g. from face detection) to shift
+    which part of the frame survives the crop.
+    """
     tw, th = preset.width, preset.height
 
     if preset.mode == "crop_fill":
-        # Scale so the video covers the canvas, then crop the overflow from center.
+        cx, cy = crop_center
+        cx = min(max(cx, 0.0), 1.0)
+        cy = min(max(cy, 0.0), 1.0)
+        # Scale so the video covers the canvas, then crop the overflow.
+        # x/y expressions: (iw-tw)*cx and (ih-th)*cy — at cx=cy=0.5 this is
+        # exactly the original centered crop; ffmpeg clamps out-of-range
+        # values automatically, so extreme offsets near frame edges are safe.
         return (
             f"scale={tw}:{th}:force_original_aspect_ratio=increase,"
-            f"crop={tw}:{th}"
+            f"crop={tw}:{th}:(iw-{tw})*{cx}:(ih-{th})*{cy}"
         )
     elif preset.mode == "pad_fit":
         # Scale to fit inside the canvas, pad remainder with black (letterbox).
@@ -57,10 +72,11 @@ def resize_video(
     preset: Preset,
     trim_to_max_duration: bool = True,
     extra_vf: str | None = None,
+    crop_center: tuple[float, float] = (0.5, 0.5),
 ) -> None:
     """Resize/crop `src` to fit `preset` and write to `dst`."""
     info = probe(src)
-    vf = build_video_filter(info["width"], info["height"], preset)
+    vf = build_video_filter(info["width"], info["height"], preset, crop_center=crop_center)
     if extra_vf:
         vf = f"{vf},{extra_vf}"
 

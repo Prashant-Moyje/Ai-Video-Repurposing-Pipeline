@@ -47,6 +47,14 @@ add_captions = st.checkbox(
     value=False,
 )
 
+smart_crop = st.checkbox(
+    "Smart crop (OpenCV face detection instead of blind center-crop)",
+    value=False,
+    help="Detects the main subject's face and shifts the crop window "
+         "toward it, instead of always cropping dead-center. Falls back "
+         "to center-crop automatically if no face is found.",
+)
+
 run_button = st.button("Repurpose video", type="primary", disabled=uploaded_file is None)
 
 if run_button:
@@ -74,6 +82,12 @@ if run_button:
         status = st.empty()
         results = []
 
+        crop_center = (0.5, 0.5)
+        if smart_crop:
+            status.text("Detecting face position for smart crop...")
+            from repurpose.smart_crop import detect_face_center_offset
+            crop_center = detect_face_center_offset(src)
+
         for i, platform_name in enumerate(platforms):
             frac = i / len(platforms)
             status.text(f"Resizing for {platform_name}...")
@@ -81,7 +95,7 @@ if run_button:
 
             preset = get_preset(platform_name)
             resized_path = tmp / f"{src.stem}_{platform_name}_resized.mp4"
-            resize_video(src, resized_path, preset)
+            resize_video(src, resized_path, preset, crop_center=crop_center)
             current = resized_path
 
             if add_captions:

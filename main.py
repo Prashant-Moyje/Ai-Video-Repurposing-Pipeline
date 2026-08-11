@@ -50,10 +50,18 @@ def process_one(
     caption_model: str,
     title: str | None,
     description: str | None,
+    smart_crop: bool = False,
 ) -> None:
     print(f"\n== {src.name} ==")
     with tempfile.TemporaryDirectory() as tmp_str:
         tmp = Path(tmp_str)
+
+        crop_center = (0.5, 0.5)
+        if smart_crop:
+            from repurpose.smart_crop import detect_face_center_offset
+            print("  detecting face position for smart crop...")
+            crop_center = detect_face_center_offset(src)
+            print(f"  smart crop offset: x={crop_center[0]:.2f}, y={crop_center[1]:.2f}")
 
         for platform_name in platforms:
             preset = get_preset(platform_name)
@@ -62,7 +70,7 @@ def process_one(
 
             print(f"  [{platform_name}] resizing to {preset.width}x{preset.height} "
                   f"({preset.mode})...")
-            resize_video(src, resized_path, preset)
+            resize_video(src, resized_path, preset, crop_center=crop_center)
 
             current = resized_path
 
@@ -105,6 +113,9 @@ def main() -> None:
                               "Bigger = more accurate but slower.")
     parser.add_argument("--title", default=None, help="Metadata title tag for outputs.")
     parser.add_argument("--description", default=None, help="Metadata description tag.")
+    parser.add_argument("--smart-crop", action="store_true",
+                         help="Use face detection (OpenCV) to choose a better crop offset "
+                              "than a blind center-crop, for crop-fill platforms.")
 
     args = parser.parse_args()
 
@@ -127,6 +138,7 @@ def main() -> None:
                 src, args.output, args.platforms,
                 args.captions, args.caption_model,
                 args.title, args.description,
+                smart_crop=args.smart_crop,
             )
         except Exception as e:
             print(f"  !! Failed on {src.name}: {e}", file=sys.stderr)
