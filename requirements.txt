@@ -1,3 +1,2 @@
-flask>=3.0
-gunicorn>=21.2
+streamlit>=1.30
 faster-whisper>=1.0.0
