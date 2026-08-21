@@ -1,6 +1,25 @@
-# 🎥 Video Repurposing Bot
+# 🎥 AI Video Repurposing Pipeline
 
-An AI-powered video processing application that automatically reframes long-form content for social media platforms (TikTok, Instagram Reels, YouTube Shorts), applies computer vision-based smart cropping, and burns in accurate audio captions using speech-to-text transcription.
+**One long video in → platform-ready vertical clips out, with the subject kept 
+in frame and captions already burned in.**
+
+Cutting a 20-minute talk into TikToks by hand means re-cropping every shot so the 
+speaker isn't sliced off, then typing subtitles. This does both automatically: 
+OpenCV face detection drives the crop window, Whisper writes the captions, FFmpeg 
+renders to each platform's exact spec.
+
+<!-- TODO: replace with a real GIF — 16:9 source on the left, 9:16 captioned output 
+on the right. This is the single highest-value addition to this README. -->
+![Before and after](docs/demo.gif)
+
+🚀 **[Try it in your browser](https://video-repurposing-bot-zbvg35gxvwgtgqrczqyyvr.streamlit.app/)** — no install needed.
+
+```bash
+python main.py -i talk.mp4 -o clips/ --platforms tiktok reels --smart-crop --captions
+```
+
+**Built for:** podcasters, course creators, and anyone repurposing long-form video 
+who doesn't want to open a video editor.
 
 🚀 **[Live Demo on Streamlit](https://video-repurposing-bot-zbvg35gxvwgtgqrczqyyvr.streamlit.app/)**
 
